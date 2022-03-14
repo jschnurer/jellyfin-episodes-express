@@ -5,12 +5,21 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const runScript = require("./runScript");
 const path = require("path");
+const basicAuth = require('express-basic-auth');
 
 // Set up the socket io server.
 const io = new Server(server);
 
 const settings = require("./local.settings.json");
 const port = settings.port;
+
+// Set up basic auth.
+if (settings.basicAuthUsers) {
+  app.use(basicAuth({
+    users: settings.basicAuthUsers,
+    challenge: true,
+  }));
+}
 
 // Setup main page.
 app.get('/', (req, res) => {
