@@ -2,8 +2,8 @@
 
 ```json
 {
-  "port": 87,
-  "scriptPath": "./script",
-  "scriptFile": "index.js"
+  "port": <your server port>,
+  "scriptPath": <string: relative folder path>,
+  "scriptFile": <string: name of node script>
 }
 ```
