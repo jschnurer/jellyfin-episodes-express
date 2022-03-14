@@ -1,0 +1,144 @@
+<html>
+
+<head>
+  <title>Jellyfin New Episode Reporter</title>
+</head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+<script>
+  const socket = io('/', { path: "/episodes/socket.io" });
+
+  socket.on("done", () => {
+    $("#console").css("display", "none");
+    window.location.href = (window.location.href + '/output');
+  });
+
+  socket.on("error", (msg) => {
+    outputMessage(msg, true);
+    toggleButton(true);
+  });
+
+  socket.on("message", (msg) => {
+    outputMessage(msg);
+  });
+</script>
+<style>
+  body {
+    background-color: #222;
+    color: white;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    color: white;
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+
+  .controls {
+    flex: none;
+    text-align: center;
+    background-color: #333;
+    padding: 1vmin;
+  }
+
+  #run {
+    padding: .25vmin;
+  }
+
+  #report {
+    padding: 1vmin;
+    flex: auto;
+    overflow: auto;
+  }
+
+  #console {
+    flex: 1;
+    background-color: #333;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #console .header {
+    display: flex;
+    flex: none;
+    padding: .5vmin;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    background-color: #000;
+    border-bottom: #333;
+  }
+
+  #console .header span:first-child {
+    flex: 1;
+  }
+
+  #close {
+    cursor: pointer;
+  }
+
+  #text {
+    background-color: #000;
+    overflow: auto;
+    padding: .5vmin;
+    flex: auto;
+  }
+
+  .error {
+    color: red;
+  }
+</style>
+
+<body>
+  <div class="layout">
+    <div class="controls">
+      <button id="run">
+        Run Report
+      </button>
+      <a href="../episodes/output">View Episode Report</a>
+    </div>
+    <div id="console">
+      <div class="header"><span>Console Output</span></div>
+      <div id="text">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Run report button.
+    $("#run").click(() => {
+      toggleButton(false);
+      console.log("runReport");
+      socket.emit("runReport");
+    });
+
+    function toggleButton(enabled) {
+      if (enabled) {
+        $("#run").attr("disabled", false);
+        $("#run").text("Run Report");
+      } else {
+        $("#run").attr("disabled", true);
+        $("#run").text("Working...");
+      }
+    }
+
+    function outputMessage(message, isError) {
+      var div = $(`<div></div>`);
+      div.text(message);
+      if (isError) {
+        div.addClass("error");
+      }
+      $("#text").append(div);
+      $('#text').scrollTop($('#text')[0].scrollHeight);
+    }
+  </script>
+</body>
+
+</html>
