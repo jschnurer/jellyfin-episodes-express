@@ -22,12 +22,16 @@ if (settings.basicAuthUsers) {
 }
 
 // Setup main page.
-app.get('/', (req, res) => {
+app.get('/', (_, res) => {
   res.sendFile("./index.html", { root: __dirname });
 });
 
+app.get('/random', (_, res) => {
+  res.sendFile("./randomMovie.html", { root: __dirname });
+});
+
 // Setup route for getting the outputted report.
-app.get('/output', (req, res) => {
+app.get('/output', (_, res) => {
   var opts = { root: path.join(__dirname, settings.scriptPath) };
   res.sendFile("output.html", opts);
 });
@@ -68,6 +72,19 @@ io.on('connection', async function (socket) {
       io.emit("done");
     }, (msg) => {
       io.emit("message", msg);
+    });
+  });
+
+  socket.on("getRandomMovie", function () {
+    // Run the other script.
+    runScript(settings.randomMovieScriptFile, settings.randomMovieScriptPath, function (err) {
+      if (err) {
+        var msg = "ERROR: " + err.toString();
+        io.emit("randomMovieError", msg);
+        return;
+      }
+    }, (msg) => {
+      io.emit("returnRandomMovie", msg);
     });
   });
 

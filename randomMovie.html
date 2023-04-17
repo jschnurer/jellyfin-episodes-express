@@ -1,0 +1,136 @@
+<html>
+
+<head>
+  <title>Jellyfin Random Movie</title>
+</head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+<script>
+  const socket = io('/', { path: "/socket.io" });
+
+  socket.on("returnRandomMovie", (msg) => {
+    console.log(msg);
+    $("#output").removeClass("error");
+    outputMessage(msg);
+    toggleButton(true);
+  });
+
+  socket.on("randomMovieError", (msg) => {
+    $("#output").addClass("error");
+    outputMessage(msg);
+    toggleButton(true);
+  });
+</script>
+<style>
+  body {
+    background-color: #222;
+    color: white;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    color: white;
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    max-width: 900px;
+    margin: auto;
+    text-align: center;
+    gap: 1em;
+    align-items: center;
+  }
+
+  .error {
+    color: red;
+    border-color: red;
+  }
+
+  .output {
+    border: 1px white solid;
+    padding: 1em;
+    font-size: 1.25em;
+    display: none;
+  }
+
+  button {
+    max-width: 300px;
+    font-size: 1.33em;
+    padding: .33em;
+  }
+</style>
+
+<body>
+  <div class="layout">
+    <h1>Jellyfin Random Unwatched Movie</h1>
+
+    <button id="getRandom">
+      Spin the Wheel
+    </button>
+
+    <div class="output" id="output">
+
+    </div>
+  </div>
+
+  <script>
+    // Run report button.
+    $("#getRandom").click(async () => {
+      toggleButton(false);
+      socket.emit("getRandomMovie");
+    });
+
+    function outputMessage(message) {
+      let formattedMsg = message;
+
+      var div = $(`<div></div>`);
+
+      div.css("display", "flex");
+      div.css("flex-direction", "column");
+
+      if (message.indexOf('\n') > -1) {
+        const lines = message.split('\n');
+
+        lines.forEach((line, ix) => {
+          var span = $('<span></span>');
+          span.css("display", "block");
+
+          if (ix === 1) {
+            span.css("margin", "1em 0");
+          }
+
+          if (line.indexOf("--->") === 0) {
+            span.css("color", "lime");
+          }
+
+          span.text(line);
+
+          div.append(span);
+        });
+
+        div.css("text-align", "left");
+      } else {
+        div.text(formattedMsg);
+      }
+
+      $("#output").empty();
+      $("#output").append(div);
+      $("#output").css("display", "block");
+    }
+
+    function toggleButton(enabled) {
+      if (enabled) {
+        $("#getRandom").attr("disabled", false);
+        $("#getRandom").text("Spin the Wheel");
+      } else {
+        $("#getRandom").attr("disabled", true);
+        $("#getRandom").text("Spinning...");
+      }
+    }
+  </script>
+</body>
+
+</html>

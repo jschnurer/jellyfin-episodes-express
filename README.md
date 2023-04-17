@@ -11,6 +11,8 @@ This file must exist for the app to run. All settings are required except `basic
   "scriptFile": <string: name of node script>,
   "basicAuthUsers": {
     "<username>": <string: password>
-  }
+  },
+  "randomMovieScriptPath": "relative folder path to random movie script",
+  "randomMovieScriptFile": "filename of random movie script"
 }
 ```
