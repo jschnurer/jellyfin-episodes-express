@@ -6,7 +6,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
 <script>
-  const socket = io('/', { path: "/socket.io" });
+  const socket = io('/', { path: "/episodes/socket.io" });
 
   socket.on("returnRandomMovie", (msg) => {
     console.log(msg);
@@ -64,6 +64,8 @@
 </style>
 
 <body>
+  <a href="/episodes">Back to episodes</a>
+  
   <div class="layout">
     <h1>Jellyfin Random Unwatched Movie</h1>
 
