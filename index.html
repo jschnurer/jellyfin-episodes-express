@@ -10,7 +10,7 @@
 
   socket.on("done", () => {
     $("#console").css("display", "none");
-    window.location.href = (window.location.href + '/output');
+    window.location.href = (window.location.href + '/report');
   });
 
   socket.on("error", (msg) => {
