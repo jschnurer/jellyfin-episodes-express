@@ -1,11 +1,16 @@
 const express = require('express');
-const app = express();
 const http = require('http');
-const server = http.createServer(app);
 const { Server } = require("socket.io");
 const runScript = require("./runScript");
+const reportPageServer = require("./reportPageServer.js");
 const path = require("path");
 const basicAuth = require('express-basic-auth');
+var bodyParser = require('body-parser');
+
+const app = express();
+var jsonParser = bodyParser.json();
+
+const server = http.createServer(app);
 
 // Set up the socket io server.
 const io = new Server(server);
@@ -31,10 +36,12 @@ app.get('/random', (_, res) => {
 });
 
 // Setup route for getting the outputted report.
-app.get('/output', (_, res) => {
+app.get('/raw-output', (_, res) => {
   var opts = { root: path.join(__dirname, settings.scriptPath) };
   res.sendFile("output.html", opts);
 });
+
+reportPageServer.setupReportPage(app, jsonParser);
 
 isReportRunning = false;
 

@@ -3,7 +3,7 @@
 <head>
   <title>Jellyfin New Episode Reporter</title>
 </head>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.slim.min.js" integrity="sha256-tG5mcZUtJsZvyKAxYLVXrmjKBVLd6VpVccqz/r4ypFE=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
 <script>
   const socket = io('/', { path: "/episodes/socket.io" });
@@ -102,7 +102,7 @@
       <button id="run">
         Run Report
       </button>
-      <a href="../episodes/output">View Episode Report</a>
+      <a href="report">View Episode Report</a>
     </div>
     <div id="console">
       <div class="header"><span>Console Output</span></div>

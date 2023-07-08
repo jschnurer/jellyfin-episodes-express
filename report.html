@@ -1,0 +1,354 @@
+<html>
+
+<head>
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 1em;
+      background-color: #222;
+      color: #ccc;
+      font-family: sans-serif;
+    }
+
+    h1,
+    h2 {
+      font-style: italic;
+      margin-bottom: .2em;
+    }
+
+    .body {
+      border: 1px #ccc solid;
+      padding: .5em;
+      max-width: 40em;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .body .expander {
+      display: none;
+    }
+
+    .body.closed {
+      max-height: 1em;
+      overflow: hidden;
+    }
+
+    .body.closed .expander {
+      display: block;
+      position: absolute;
+      inset: 0 0 0 0;
+      background-color: black;
+      opacity: .85;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+    }
+
+    .show-row {
+      display: flex;
+      border-bottom: 1px dotted #ccc;
+      padding: .5em 0;
+      align-items: center;
+    }
+
+    .show-row:hover {
+      background-color: #333;
+    }
+
+    .hide-show {
+      display: inline-block;
+      margin-right: 1em;
+      cursor: pointer;
+      font-size: 1.25em;
+      line-height: .5em;
+    }
+
+    .hide-show:hover {
+      color: red;
+    }
+
+    .show {
+      flex: auto;
+    }
+  </style>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.slim.min.js"
+    integrity="sha256-tG5mcZUtJsZvyKAxYLVXrmjKBVLd6VpVccqz/r4ypFE=" crossorigin="anonymous"></script>
+
+  <script lang="javascript">
+    var epLinkPattern = "https://torrentgalaxy.to/torrents.php?search={search}";
+    var showData = #outputJson#;
+  </script>
+
+  <script lang="javascript">
+    $(function () {
+      // Body on load.
+      var shows = showData.shows;
+
+      $("#last-run-date").text(new Date(showData.lastRun));
+
+      appendAvailableEpisodes(shows.filter(x => x.status === "available"));
+      appendUpcomingEpisodes(shows.filter(x => x.status === "upcoming"));
+      appendEndedShows(shows.filter(x => x.status === "ended"));
+      appendLastRunErrors(showData.lastRunErrors);
+      appendIgnoredShows(shows.filter(x => x.status === "ignored"));
+
+      setupClickEvents();
+    });
+
+    function appendAvailableEpisodes(shows) {
+      var bodyDiv = $("#available-episodes");
+      var sortedShows = shows
+        .sort((a, b) => a.show < b.show ? -1 : 1);
+
+      sortedShows
+        .forEach(show => {
+          var div = $("<div>", {
+            class: "show-row",
+          }).appendTo(bodyDiv);
+
+          var showSpan = $("<span>", {
+            class: "show",
+          }).appendTo(div);
+
+          var epSpan = $("<span>", {
+            class: "ep",
+          }).appendTo(div);
+
+          var hideSpan = $("<span>", {
+            class: "hide-show",
+            title: "Ignore Show",
+          }).appendTo(showSpan);
+
+          hideSpan.attr("data-action", "ignore");
+          hideSpan.attr("data-jellyfin-id", show.jellyfinId);
+          hideSpan.attr("data-show", show.show);
+          hideSpan.text("👁");
+
+          showSpan.append(show.show);
+          epSpan.append(show.jellyfinLatestEpisode + " → ");
+
+          var linkSpan = $("<a>", {
+            class: "ep-link",
+          }).appendTo(epSpan);
+
+          linkSpan.attr("href", epLinkPattern.replace("{search}", show.show + " " + show.availableEpisode));
+          linkSpan.append(show.availableEpisode);
+        });
+    }
+
+    function appendUpcomingEpisodes(shows) {
+      var bodyDiv = $("#upcoming-episodes");
+
+      groupBy(shows, "upcomingEpisodeAirDate")
+        .sort((a, b) => a.key < b.key ? -1 : 1)
+        .forEach(group => {
+          var upcomingEpisodeAirDate = group.key;
+          var showsOnThisDate = group.values;
+
+          // Create a header inside the body for this date.
+          var header = $("<h2>").appendTo(bodyDiv);
+          header.text(formatTMDBDate(upcomingEpisodeAirDate));
+
+          // Now output the list of shows.
+          var sortedShows = showsOnThisDate
+            .sort((a, b) => a.show < b.show ? -1 : 1);
+
+          sortedShows
+            .forEach(show => {
+              var div = $("<div>", {
+                class: "show-row",
+              }).appendTo(bodyDiv);
+
+              var showSpan = $("<span>", {
+                class: "show",
+              }).appendTo(div);
+
+              var epSpan = $("<span>", {
+                class: "ep",
+              }).appendTo(div);
+
+              var hideSpan = $("<span>", {
+                class: "hide-show",
+                title: "Ignore Show",
+              }).appendTo(showSpan);
+
+              hideSpan.attr("data-jellyfin-id", show.jellyfinId);
+              hideSpan.text("👁");
+
+              showSpan.append(show.show);
+              epSpan.append(show.jellyfinLatestEpisode + " → ");
+
+              var linkSpan = $("<a>", {
+                class: "ep-link",
+              }).appendTo(epSpan);
+
+              linkSpan.attr("href", epLinkPattern.replace("{search}", show.show + " " + show.upcomingEpisode));
+              linkSpan.append(show.upcomingEpisode);
+            });
+        });
+    }
+
+    function appendEndedShows(shows) {
+      var bodyDiv = $("#ended-shows");
+
+      var sortedShows = shows
+        .sort((a, b) => a.show < b.show ? -1 : 1);
+
+      sortedShows
+        .forEach(show => {
+          var div = $("<div>", {
+            class: "show-row",
+          }).appendTo(bodyDiv);
+
+          var showSpan = $("<span>", {
+            class: "show",
+          }).appendTo(div);
+
+          showSpan.append(show.show);
+        });
+    }
+
+    function appendLastRunErrors(errorMessages) {
+      var bodyDiv = $("#last-run-errors");
+
+      errorMessages
+        .forEach(msg => {
+          var div = $("<div>").appendTo(bodyDiv);
+          div.append(msg);
+        });
+    }
+
+    function appendIgnoredShows(shows) {
+      var bodyDiv = $("#ignored-shows");
+
+      var sortedShows = shows
+        .sort((a, b) => a.show < b.show ? -1 : 1);
+
+      sortedShows
+        .forEach(show => {
+          var div = $("<div>", {
+            class: "show-row",
+          }).appendTo(bodyDiv);
+
+          var showSpan = $("<span>", {
+            class: "show",
+          }).appendTo(div);
+
+          var unhideSpan = $("<span>", {
+            class: "hide-show",
+            title: "Ignore Show",
+          }).appendTo(showSpan);
+
+          unhideSpan.attr("data-action", "unignore");
+          unhideSpan.attr("data-jellyfin-id", show.jellyfinId);
+          unhideSpan.attr("data-show", show.show);
+          unhideSpan.text("👁");
+
+          showSpan.append(show.show);
+        });
+    }
+
+    function groupBy(xs, key) {
+      return xs.reduce(function (rv, x) {
+        let v = key instanceof Function
+          ? key(x)
+          : x[key];
+        let el = rv.find((r) => r && r.key === v);
+        if (el) {
+          el.values.push(x);
+        } else {
+          rv.push({
+            key: v,
+            values: [x],
+          });
+        }
+        return rv;
+      },
+        []);
+    }
+
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    function strToDate(dateStr) {
+      const parts = dateStr.split("-");
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function formatTMDBDate(dateStr) {
+      return `${days[strToDate(dateStr).getDay()]}, ${dateStr}`;
+    }
+
+    function setupClickEvents() {
+      $(".expander").click(function () {
+        $(this).parent().removeClass("closed");
+      });
+
+      $(".hide-show").click(function () {
+        var thisBtn = $(this);
+        var show = thisBtn.attr("data-show");
+        var jid = thisBtn.attr("data-jellyfin-id");
+        var action = thisBtn.attr("data-action");
+
+        // send req to server to ignore this. when done, remove this item's parent show-row
+        var ignoreShow = async function () {
+          var response = await fetch("../set-ignored", {
+            body: JSON.stringify({
+              jellyfinId: jid,
+              show,
+              action,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          });
+
+          if (response.status !== 200) {
+            window.alert("ERROR IGNORING SHOW! SEE CONSOLE!");
+            var output = await response.text();
+            console.log(output);
+          } else {
+            thisBtn.closest(".show-row").remove();
+          }
+        };
+
+        ignoreShow();
+      });
+    }
+  </script>
+</head>
+
+<body>
+  <div>Last run: <span id="last-run-date"></span></div>
+
+  <h1>New Episodes</h1>
+
+  <div class="body" id="available-episodes"></div>
+
+  <h1>Upcoming Episodes</h1>
+
+  <div class="body" id="upcoming-episodes"></div>
+
+  <h1>Ended Shows (Detected During Last Run)</h1>
+
+  <div class="body closed" id="ended-shows">
+    <div class="expander">+ Expand +</div>
+  </div>
+
+  <h1>Last Run Errors</h1>
+
+  <div class="body" id="last-run-errors"></div>
+
+  <h1>Ignored Shows</h1>
+
+  <div class="body closed" id="ignored-shows">
+    <div class="expander">+ Expand +</div>
+  </div>
+</body>
+
+</html>
