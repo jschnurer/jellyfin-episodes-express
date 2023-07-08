@@ -12,7 +12,7 @@ function setupGetRoute(app) {
 
     try {
       const outputJson = fs.readFileSync(path.join(__dirname, settings.scriptPath, "output.json"), "utf8");
-      const reportHtml = fs.readFileSync("./report.html", "utf8").replace("#outputJson#", outputJson);
+      const reportHtml = fs.readFileSync("./report.html", "utf8").replace("#outputJson#", outputJson).replace("#epLink", settings.epLink);
 
       res.send(reportHtml);
     } catch (err) {

@@ -13,6 +13,7 @@ This file must exist for the app to run. All settings are required except `basic
     "<username>": <string: password>
   },
   "randomMovieScriptPath": "relative folder path to random movie script",
-  "randomMovieScriptFile": "filename of random movie script"
+  "randomMovieScriptFile": "filename of random movie script",
+  "epLink": <string: url with "{search}" which will be replaced with show name and episode info>
 }
 ```
