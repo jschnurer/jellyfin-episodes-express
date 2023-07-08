@@ -11,6 +11,26 @@
       font-family: sans-serif;
     }
 
+    body {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+    }
+
+    a {
+      color: white;
+    }
+
+    a:visited {
+      color: #ddd;
+    }
+
     h1,
     h2 {
       font-style: italic;
@@ -296,7 +316,7 @@
 
         // send req to server to ignore this. when done, remove this item's parent show-row
         var ignoreShow = async function () {
-          var response = await fetch("../set-ignored", {
+          var response = await fetch("./set-ignored", {
             body: JSON.stringify({
               jellyfinId: jid,
               show,
@@ -324,7 +344,10 @@
 </head>
 
 <body>
-  <div>Last run: <span id="last-run-date"></span></div>
+  <div class="header">
+    <a href="../episodes">Re-run report</a>
+    <div>Last run: <span id="last-run-date"></span></div>
+  </div>
 
   <h1>New Episodes</h1>
 
