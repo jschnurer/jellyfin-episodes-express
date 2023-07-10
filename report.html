@@ -172,7 +172,7 @@
 
           // Create a header inside the body for this date.
           var header = $("<h2>").appendTo(bodyDiv);
-          header.text(formatTMDBDate(upcomingEpisodeAirDate));
+          header.text(formatTMDBDate(upcomingEpisodeAirDate) + ` (${getDaysTil(strToDate(group.key))})`);
 
           // Now output the list of shows.
           var sortedShows = showsOnThisDate
@@ -301,6 +301,13 @@
 
     function formatTMDBDate(dateStr) {
       return `${days[strToDate(dateStr).getDay()]}, ${dateStr}`;
+    }
+
+    function getDaysTil(date) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const numDays = Math.floor((date - today) / (1000 * 3600 * 24));
+      return `${numDays} day${numDays === 1 ? "" : "s"}`;
     }
 
     function setupClickEvents() {
