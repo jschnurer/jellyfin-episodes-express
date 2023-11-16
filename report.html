@@ -131,6 +131,16 @@
             class: "show-row",
           }).appendTo(bodyDiv);
 
+          var hideSpan = $("<span>", {
+            class: "hide-show",
+            title: "Ignore Show",
+          }).appendTo(div);
+
+          hideSpan.attr("data-action", "ignore");
+          hideSpan.attr("data-jellyfin-id", show.jellyfinId);
+          hideSpan.attr("data-show", show.show);
+          hideSpan.text("👁");
+
           var showSpan = $("<span>", {
             class: "show",
           }).appendTo(div);
@@ -138,16 +148,6 @@
           var epSpan = $("<span>", {
             class: "ep",
           }).appendTo(div);
-
-          var hideSpan = $("<span>", {
-            class: "hide-show",
-            title: "Ignore Show",
-          }).appendTo(showSpan);
-
-          hideSpan.attr("data-action", "ignore");
-          hideSpan.attr("data-jellyfin-id", show.jellyfinId);
-          hideSpan.attr("data-show", show.show);
-          hideSpan.text("👁");
 
           showSpan.append(show.show);
           epSpan.append(show.jellyfinLatestEpisode + " → ");
