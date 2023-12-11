@@ -14,6 +14,10 @@ This file must exist for the app to run. All settings are required except `basic
   },
   "randomMovieScriptPath": "relative folder path to random movie script",
   "randomMovieScriptFile": "filename of random movie script",
-  "epLink": <string: url with "{search}" which will be replaced with show name and episode info>
+  "linkDict": {
+    "LABEL1": "string: url with {search} in it which will be replaced with show and episode info",
+    "LABEL2": "string: url with {search} in it which will be replaced with show and episode info",
+    ...
+  }
 }
 ```
