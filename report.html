@@ -101,6 +101,9 @@
 
   <script lang="javascript">
     var epLinkPattern = "#epLink#";
+
+    var linkDict = #linkDict#;
+
     var showData = #outputJson#;
   </script>
 
@@ -152,12 +155,22 @@
           showSpan.append(show.show);
           epSpan.append(show.jellyfinLatestEpisode + " → ");
 
-          var linkSpan = $("<a>", {
-            class: "ep-link",
-          }).appendTo(epSpan);
+          epSpan.append(show.availableEpisode + ": ");
 
-          linkSpan.attr("href", epLinkPattern.replace("{search}", show.show + " " + show.availableEpisode));
-          linkSpan.append(show.availableEpisode);
+          let i = 0;
+	  Object.entries(linkDict).map(entry => {
+            if (i > 0) {
+              epSpan.append(", ");
+            }
+
+ 	    var linkSpan = $("<a>", {
+  	      class: "ep-link",
+            }).appendTo(epSpan);
+
+            linkSpan.attr("href", entry[1].replace("{search}", show.show + " " + show.availableEpisode));
+            linkSpan.append(entry[0]);
+            i++;
+          });
         });
     }
 
