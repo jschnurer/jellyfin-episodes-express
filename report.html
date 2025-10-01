@@ -17,6 +17,11 @@
       gap: 1em;
     }
 
+    .page {
+      margin: auto;
+      max-width: 50em;
+    }
+
     .header {
       display: flex;
       flex-direction: column;
@@ -40,7 +45,6 @@
     .body {
       border: 1px #ccc solid;
       padding: .5em;
-      max-width: 40em;
       display: flex;
       flex-direction: column;
       position: relative;
@@ -158,13 +162,13 @@
           epSpan.append(show.availableEpisode + ": ");
 
           let i = 0;
-	  Object.entries(linkDict).map(entry => {
+          Object.entries(linkDict).map(entry => {
             if (i > 0) {
               epSpan.append(", ");
             }
 
- 	    var linkSpan = $("<a>", {
-  	      class: "ep-link",
+            var linkSpan = $("<a>", {
+              class: "ep-link",
             }).appendTo(epSpan);
 
             linkSpan.attr("href", entry[1].replace("{search}", show.show + " " + show.availableEpisode));
@@ -216,12 +220,24 @@
               showSpan.append(show.show);
               epSpan.append(show.jellyfinLatestEpisode + " → ");
 
-              var linkSpan = $("<a>", {
-                class: "ep-link",
-              }).appendTo(epSpan);
 
-              linkSpan.attr("href", epLinkPattern.replace("{search}", show.show + " " + show.upcomingEpisode));
-              linkSpan.append(show.upcomingEpisode);
+              var nextEpSpan = $("<span>").appendTo(epSpan);
+              nextEpSpan.append(show.upcomingEpisode + "&nbsp;");
+
+              let i = 0;
+              Object.entries(linkDict).map(entry => {
+                if (i > 0) {
+                  epSpan.append(", ");
+                }
+
+                var linkSpan = $("<a>", {
+                  class: "ep-link",
+                }).appendTo(epSpan);
+
+                linkSpan.attr("href", entry[1].replace("{search}", show.show + " " + show.upcomingEpisode));
+                linkSpan.append(entry[0]);
+                i++;
+              });
             });
         });
     }
@@ -251,7 +267,30 @@
 
       errorMessages
         .forEach(msg => {
-          var div = $("<div>").appendTo(bodyDiv);
+          var div = $("<div>", {
+            class: "show-row",
+          }).appendTo(bodyDiv);
+
+          var hideSpan = $("<span>", {
+            class: "hide-show",
+            title: "Ignore Show",
+          }).appendTo(div);
+
+          hideSpan.attr("data-action", "ignore");
+          hideSpan.attr("data-jellyfin-id", msg.jellyfinId);
+          hideSpan.attr("data-show", msg.show);
+          hideSpan.text("👁");
+
+          var showSpan = $("<span>", {
+            class: "show",
+          }).appendTo(div);
+          showSpan.text(msg.show)
+
+          var errSpan = $("<span>", {
+            class: "error-message",
+          }).appendTo(div);
+          errSpan.text(msg.error)
+
           div.append(msg);
         });
     }
@@ -364,33 +403,35 @@
 </head>
 
 <body>
-  <div class="header">
-    <a href="../episodes">Re-run report</a>
-    <div>Last run: <span id="last-run-date"></span></div>
-  </div>
+  <div class="page">
+    <div class="header">
+      <a href="../episodes">Re-run report</a>
+      <div>Last run: <span id="last-run-date"></span></div>
+    </div>
 
-  <h1>New Episodes</h1>
+    <h1>New Episodes</h1>
 
-  <div class="body" id="available-episodes"></div>
+    <div class="body" id="available-episodes"></div>
 
-  <h1>Upcoming Episodes</h1>
+    <h1>Upcoming Episodes</h1>
 
-  <div class="body" id="upcoming-episodes"></div>
+    <div class="body" id="upcoming-episodes"></div>
 
-  <h1>Ended Shows (Detected During Last Run)</h1>
+    <h1>Ended Shows (Detected During Last Run)</h1>
 
-  <div class="body closed" id="ended-shows">
-    <div class="expander">+ Expand +</div>
-  </div>
+    <div class="body closed" id="ended-shows">
+      <div class="expander">+ Expand +</div>
+    </div>
 
-  <h1>Last Run Errors</h1>
+    <h1>Last Run Errors</h1>
 
-  <div class="body" id="last-run-errors"></div>
+    <div class="body" id="last-run-errors"></div>
 
-  <h1>Ignored Shows</h1>
+    <h1>Ignored Shows</h1>
 
-  <div class="body closed" id="ignored-shows">
-    <div class="expander">+ Expand +</div>
+    <div class="body closed" id="ignored-shows">
+      <div class="expander">+ Expand +</div>
+    </div>
   </div>
 </body>
 
