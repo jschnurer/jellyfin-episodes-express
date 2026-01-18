@@ -91,12 +91,74 @@
       line-height: .5em;
     }
 
-    .hide-show:hover {
+    .clickable {
+      cursor: pointer;
+    }
+
+    .hide-show:hover,
+    .clickable:hover {
       color: red;
     }
 
     .show {
       flex: auto;
+    }
+
+    .recount-modal {
+      display: none;
+      position: fixed;
+      inset: 0 0 0 0;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .recount-dark {
+      background-color: rgba(0, 0, 0, .75);
+      position: fixed;
+      inset: 0 0 0 0;
+    }
+
+    .recount-form {
+      background-color: #333;
+      border: 2px silver solid;
+      padding: 1em;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      max-width: 600px;
+    }
+
+    .recount-form label {
+      font-weight: bold;
+    }
+
+    #recount-show-name {
+      font-size: 1.5em;
+    }
+
+    .ep {
+      display: flex;
+      gap: .25em;
+    }
+
+    .overridden-episode {
+      font-style: italic;
+      color: yellow;
+      cursor: help;
+    }
+
+    button {
+      background-color: white;
+      padding: .25em .5em;
+      color: black;
+      border: none;
+      opacity: .8;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 1;
     }
   </style>
 
@@ -107,6 +169,8 @@
     var epLinkPattern = "#epLink#";
 
     var linkDict = #linkDict#;
+
+    var recountOverrides = #recountOverrides#;
 
     var showData = #outputJson#;
   </script>
@@ -161,20 +225,9 @@
 
           epSpan.append(show.availableEpisode + ": ");
 
-          let i = 0;
-          Object.entries(linkDict).map(entry => {
-            if (i > 0) {
-              epSpan.append(", ");
-            }
+          appendEpLinks(show.show, show.jellyfinId, show.availableEpisode, epSpan);
 
-            var linkSpan = $("<a>", {
-              class: "ep-link",
-            }).appendTo(epSpan);
-
-            linkSpan.attr("href", entry[1].replace("{search}", show.show + " " + show.availableEpisode));
-            linkSpan.append(entry[0]);
-            i++;
-          });
+          getRecountLinkForShow(show).appendTo(epSpan);
         });
     }
 
@@ -220,26 +273,65 @@
               showSpan.append(show.show);
               epSpan.append(show.jellyfinLatestEpisode + " → ");
 
-
               var nextEpSpan = $("<span>").appendTo(epSpan);
-              nextEpSpan.append(show.upcomingEpisode + "&nbsp;");
+              nextEpSpan.append(show.upcomingEpisode);
 
-              let i = 0;
-              Object.entries(linkDict).map(entry => {
-                if (i > 0) {
-                  epSpan.append(", ");
-                }
+              // Get the overridden episode (if any).
+              var overrideEp = getOverriddenEp(show.show, show.jellyfinId, show.upcomingEpisode);
 
-                var linkSpan = $("<a>", {
-                  class: "ep-link",
+              if (overrideEp !== show.upcomingEpisode) {
+                var epOverrideSpan = $("<span>", {
+                  class: "overridden-episode",
+                  title: "This show has an episode recount override."
                 }).appendTo(epSpan);
+                epOverrideSpan.append("(" + overrideEp + ")");
+              }
 
-                linkSpan.attr("href", entry[1].replace("{search}", show.show + " " + show.upcomingEpisode));
-                linkSpan.append(entry[0]);
-                i++;
-              });
+              appendEpLinks(show.show, show.jellyfinId, show.upcomingEpisode, epSpan);
+
+              getRecountLinkForShow(show).appendTo(epSpan);
             });
         });
+    }
+
+    function appendEpLinks(showName, showId, episode, parentEl) {
+      let i = 0;
+      Object.entries(linkDict).map(entry => {
+        var linkSpan = $("<a>", {
+          class: "ep-link",
+        }).appendTo(parentEl);
+
+        var overriddenEp = getOverriddenEp(showName, showId, episode);
+        linkSpan.attr("href", entry[1].replace("{search}", showName + " " + overriddenEp));
+        linkSpan.append(entry[0]);
+        i++;
+      });
+    }
+
+    /// Uses the recount overrides to get the "true" episode number. Otherwise, returns the original episode number.
+    function getOverriddenEp(showName, jellyfinId, episode) {
+      // episode is like "S02E06".
+      // use override to change this based on the season ep counts provided.
+      var override = recountOverrides.find(x => x.id === jellyfinId)?.recountOverride;
+
+      if (!override) {
+        return episode;
+      }
+
+      try {
+        var numPrevEps = override.split(",").map(x => Number(x)).reduce((a, b) => a + b, 0);
+        var newEpNumber = Number(episode.split("E")[1]);
+
+        // E.g. new one is S01E29. But really, that's S02E01. Since 28 eps are in season 1
+        // and we summed them to get 28, we can do NewEp (29) minus sum (28) = 1.
+        // Then we just take the count of override season counts (1), add 1 to get the
+        // new season number (2), then use the result of the first sum as the episode num.
+        var realEpNumber = newEpNumber - numPrevEps;
+        var realSeasonNumber = override.split(",").length + 1;
+        return `S${realSeasonNumber.toString().padStart(2, "0")}E${realEpNumber.toString().padStart(2, "0")}`;
+      } catch (err) {
+        console.error(`Failed to handle episode recount override for "${showName}"!`, err);
+      }
     }
 
     function appendEndedShows(shows) {
@@ -344,6 +436,20 @@
         []);
     }
 
+    function getRecountLinkForShow(show) {
+      // Setup the "season override thing" for links.
+      var editCountingSpan = $("<span>", {
+        class: "clickable edit-counting",
+      });
+
+      editCountingSpan.attr("data-jellyfin-id", show.jellyfinId);
+      editCountingSpan.attr("data-show", show.show);
+      editCountingSpan.attr("title", "Edit this show's episode counting method to override torrent links (e.g. 1x14 -> 2x02).");
+      editCountingSpan.append("✎");
+
+      return editCountingSpan;
+    }
+
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     function strToDate(dateStr) {
@@ -398,6 +504,132 @@
 
         ignoreShow();
       });
+
+      $("#clear-ignored").click(function () {
+        var clearIgnored = async function () {
+          if (!window.confirm("Really clear ignored shows list?")) {
+            return;
+          }
+
+          var response = await fetch("./clear-ignored", {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          });
+
+          if (response.status !== 200) {
+            window.alert("ERROR CLEARING IGNORED LIST! SEE CONSOLE!");
+            var output = await response.text();
+            console.log(output);
+          } else {
+            window.location.reload();
+          }
+        }
+      });
+
+      $(".edit-counting").click(function () {
+        var recountFormData = {
+          jellyfinId: $(this).attr("data-jellyfin-id"),
+          show: $(this).attr("data-show"),
+        }
+
+        $(".recount-modal").css("display", "flex");
+        $("#recount-show-name").text(recountFormData.show);
+        $("#btn-recount-save").attr("data-show", recountFormData.show);
+        $("#btn-recount-save").attr("data-jellyfin-id", recountFormData.jellyfinId);
+
+        console.log({
+          recountOverrides,
+          jellyfinId: recountFormData.jellyfinId
+        })
+
+        var recountSeasonNums = recountOverrides
+          .find(x => x.id.toString() === recountFormData.jellyfinId.toString())
+          ?.recountOverride || "";
+
+        $("#recount-show-season-counts").val(recountSeasonNums).focus();
+      });
+
+      $("#btn-recount-cancel").click(function () {
+        $(".recount-modal").css("display", "none");
+      });
+
+      $("#btn-recount-save").click(function () {
+        var btn = $(this);
+        var show = btn.attr("data-show");
+        var jid = btn.attr("data-jellyfin-id");
+        var action = "save";
+        var recountOverride = $("#recount-show-season-counts").val().trim();
+
+        if (!recountOverride.match(/^\d+(,\d+)*$/)) {
+          alert("Invalid recount override format. Must be numbers separated by commas. (e.g. \"12,14\" or \"12\")");
+          return;
+        }
+
+        var saveOverride = async function () {
+          var response = await fetch("./save-recount-override", {
+            body: JSON.stringify({
+              jellyfinId: jid,
+              show,
+              action,
+              recountOverride,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          });
+
+          if (response.status !== 200) {
+            window.alert("ERROR SAVING RECOUNT OVERRIDE! SEE CONSOLE!");
+            var output = await response.text();
+            console.log(output);
+          } else {
+            window.location.reload();
+          }
+        };
+
+        saveOverride();
+      });
+
+      $("#btn-recount-delete").click(function () {
+        var btn = $("#btn-recount-save");
+        var show = btn.attr("data-show");
+        var jid = btn.attr("data-jellyfin-id");
+        var action = "delete";
+        var recountOverride = $("#recount-show-season-counts").val().trim();
+
+        if (!recountOverride.match(/^\d+(,\d+)*$/)) {
+          alert("Invalid recount override format. Must be numbers separated by commas. (e.g. \"12,14\" or \"12\")");
+          return;
+        }
+
+        var saveOverride = async function () {
+          var response = await fetch("./save-recount-override", {
+            body: JSON.stringify({
+              jellyfinId: jid,
+              show,
+              action,
+              recountOverride,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          });
+
+          if (response.status !== 200) {
+            window.alert("ERROR SAVING RECOUNT OVERRIDE! SEE CONSOLE!");
+            var output = await response.text();
+            console.log(output);
+          } else {
+            window.location.reload();
+          }
+        };
+
+        saveOverride();
+      });
     }
   </script>
 </head>
@@ -427,10 +659,37 @@
 
     <div class="body" id="last-run-errors"></div>
 
-    <h1>Ignored Shows</h1>
+    <h1>Ignored Shows <span id="clear-ignored" class="clickable">👁</span></h1>
 
     <div class="body closed" id="ignored-shows">
       <div class="expander">+ Expand +</div>
+    </div>
+  </div>
+
+  <div class="recount-modal">
+    <div class="recount-dark"></div>
+    <div class="recount-form">
+      <span id="recount-show-name"></span>
+      <b><label>Season Episode Counts</label></b>
+      <input type="text" id="recount-show-season-counts" />
+      <i>"12,12,14" means S01 has 12 eps, S02 has 12 eps, S03 has 14 eps. Omit the current season.</i>
+      <i>Example: Frieren has 2 seasons.
+        The first season has 12 episodes.
+        The second has ?? episodes (ongoing).
+        The Movie DB reports only 1 season, though, with the newest being 1x14.
+        However, NYAA reports the newest episode being 2x02.
+        They disagree on how many seasons the show has.
+        To fix this, enter "12" here and save.
+        This will tell the torrent links to show 2x02 instead of 1x14.
+        Later, when season 2 concludes, come back and change this to "12,12" so that the links start using S03 instead.
+      </i>
+      <div style="text-align: right">
+        <button id="btn-recount-delete" style="background-color: red; color: white;">Delete</button>
+        &nbsp;
+        <button id="btn-recount-cancel">Cancel</button>
+        &nbsp;
+        <button id="btn-recount-save">Save</button>
+      </div>
     </div>
   </div>
 </body>
