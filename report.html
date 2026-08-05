@@ -267,6 +267,9 @@
                 title: "Ignore Show",
               }).appendTo(showSpan);
 
+              hideSpan.attr("data-action", "ignore");
+              hideSpan.attr("data-jellyfin-id", show.jellyfinId);
+              hideSpan.attr("data-show", show.show);
               hideSpan.attr("data-jellyfin-id", show.jellyfinId);
               hideSpan.text("👁");
 
